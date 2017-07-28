@@ -11,7 +11,7 @@ class GGConnectionManager:
 		self.ca_location = ca_location
 
 
-	def establish_connection(self, aws_iot_mqtt_shadow_client, certificate, private_key, location):
+	def establish_connection(self, aws_iot_mqtt_shadow_client, certificate, private_key):
 		self._store_certificates()
 		connection_established = False
 
