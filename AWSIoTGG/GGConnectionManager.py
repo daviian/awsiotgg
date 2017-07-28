@@ -61,6 +61,6 @@ class GGConnectionManager:
 		for group_name, ca_list in self.root_ca_map.items():
 			suffix_itr = 1
 			for ca_list_itr in ca_list:
-				with open(os.path.join(self.ca_location, group_name +'_root_ca'+ str(suffix_itr) +'pem'), 'w') as file:
+				with open(os.path.join(self.ca_location, group_name +'_root_ca'+ str(suffix_itr) +'.pem'), 'w') as file:
 					file.write(ca_list_itr)
 				suffix_itr += 1
