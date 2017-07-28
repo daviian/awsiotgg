@@ -27,7 +27,7 @@ class GGConnectionManager:
 			suffix_itr = 1
 			for ca_list_itr in ca_list:
 				core_ca_file_path = os.path.join(self.ca_location,
-											  '{}_root_ca{}.pem'.format(connectivity_info_list_itr.group_name, suffix_itr))
+											connectivity_info_list_itr.group_name +'_root_ca'+ str(suffix_itr) +'.pem')
 				aws_iot_mqtt_shadow_client.configureCredentials(core_ca_file_path, private_key, certificate)
 				self._logger.info('Using CA at: {}'.format(core_ca_file_path))
 
@@ -43,11 +43,11 @@ class GGConnectionManager:
 			# If connection is successful, break and continue with the rest of the application
 			if connection_established:
 				self._logger.info('Connected to GGC {} in Group {}!!'.format(connectivity_info_list_itr.ggc_name,
-																	   connectivity_info_list_itr.group_name))
+																		connectivity_info_list_itr.group_name))
 				break
 			# If connection is not successul, attempt connecting with the next endpoint and port in the list
 			self._logger.info('Connect attempt failed for GCC {} in Group {}'.format(connectivity_info_list_itr.ggc_name,
-																			   connectivity_info_list_itr.group_name))
+																				connectivity_info_list_itr.group_name))
 
 
 		# If unable to connect to any of the endpoints, then exit
@@ -61,6 +61,6 @@ class GGConnectionManager:
 		for group_name, ca_list in self.root_ca_map.items():
 			suffix_itr = 1
 			for ca_list_itr in ca_list:
-				with open(os.path.join(self.ca_location, group_name +'_root_ca'+ suffix_itr +'pem'), 'w') as file:
+				with open(os.path.join(self.ca_location, group_name +'_root_ca'+ str(suffix_itr) +'pem'), 'w') as file:
 					file.write(ca_list_itr)
 				suffix_itr += 1
