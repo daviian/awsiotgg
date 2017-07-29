@@ -1,5 +1,7 @@
+import errno
 import logging
 import os
+import socket
 import sys
 
 
@@ -31,10 +33,14 @@ class GGConnectionManager:
 				aws_iot_mqtt_shadow_client.configureCredentials(core_ca_file_path, private_key, certificate)
 				self._logger.info('Using CA at: {}'.format(core_ca_file_path))
 
-				# Connect to AWS IoT
-				connection_established = aws_iot_mqtt_shadow_client.connect()
-				if connection_established:
-					break
+				try:
+					# Connect to AWS IoT
+					connection_established = aws_iot_mqtt_shadow_client.connect()
+					if connection_established:
+						break
+				except socket.error as err:
+					if err.errno != errno.ECONNREFUSED:
+						raise
 
 				# If connection is not successful, attempt connection with the next root CA in the list
 				self._logger.info('Connect attempt failed with this CA!')
