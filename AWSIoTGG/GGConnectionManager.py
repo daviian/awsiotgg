@@ -22,7 +22,7 @@ class GGConnectionManager:
 
         # Certificate Storage path
         self._certificate_basepath = os.path.realpath(os.path.join(
-            os.getcwd(), os.path.dirname(__file__), 'certs'))
+            os.getcwd(), 'certs'))
 
         self._core_certificate_path = os.path.join(
             self._certificate_basepath, self._core_connectivity_info.groupId + '_root.ca.pem')
