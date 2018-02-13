@@ -1,2 +1,1 @@
-from GGConnectionManager import GGConnectionManager
-from GGCoreDiscoveryService import GGCoreDiscoveryService
+from AWSIoTGG.GGConnectionManager import GGConnectionManager
