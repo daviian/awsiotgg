@@ -6,7 +6,6 @@ import socket
 import sys
 import errno
 
-from AWSIoTPythonSDK.core.greengrass.discovery.models import DiscoveryInfo
 from AWSIoTPythonSDK.exception import AWSIoTExceptions
 
 logger = logging.getLogger(__name__)
@@ -15,7 +14,7 @@ logger = logging.getLogger(__name__)
 class GGConnectionManager:
     """Connection Manager for Greengrass Devices"""
 
-    def __init__(self, client, discovery_info: DiscoveryInfo):
+    def __init__(self, client, discovery_info):
         self._client = client
         self._core_connectivity_info = discovery_info.getAllCores()[0]
         self._root_certificate_map = discovery_info.getAllCas()
