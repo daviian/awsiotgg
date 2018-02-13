@@ -1,2 +1,0 @@
-from ConnectivityInfo import ConnectivityInfo
-from ResponseParser import ResponseParser

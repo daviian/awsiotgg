@@ -1,72 +1,100 @@
-import errno
+# -*- coding: utf-8 -*-
+
 import logging
 import os
 import socket
 import sys
+import errno
+
+from AWSIoTPythonSDK.core.greengrass.discovery.models import DiscoveryInfo
+from AWSIoTPythonSDK.exception import AWSIoTExceptions
+
+logger = logging.getLogger(__name__)
 
 
 class GGConnectionManager:
-	def __init__(self, connectivity_info_list, root_ca_map, ca_location):
-		self._logger = logging.getLogger(__name__)
-		self.connectivity_info_list = connectivity_info_list
-		self.root_ca_map = root_ca_map
-		self.ca_location = ca_location
+    """Connection Manager for Greengrass Devices"""
 
+    def __init__(self, client, discovery_info: DiscoveryInfo):
+        self._client = client
+        self._core_connectivity_info = discovery_info.getAllCores()[0]
+        self._root_certificate_map = discovery_info.getAllCas()
 
-	def establish_connection(self, aws_iot_mqtt_shadow_client, certificate, private_key):
-		self._store_certificates()
-		connection_established = False
+        # Certificate Storage path
+        self._certificate_basepath = os.path.realpath(os.path.join(
+            os.getcwd(), os.path.dirname(__file__), 'certs'))
 
-		# Attempt connecting to any of the endpoint in the connectivity list
-		for connectivity_info_list_itr in self.connectivity_info_list:
-			# Configure Endpoint
-			aws_iot_mqtt_shadow_client.configureEndpoint(connectivity_info_list_itr.host_address, connectivity_info_list_itr.port)
+        self._core_certificate_path = os.path.join(
+            self._certificate_basepath, self._core_connectivity_info.groupId + '_root.ca.pem')
 
-			self._logger.info(
-				'Connecting to {} on Port {}'.format(connectivity_info_list_itr.host_address, connectivity_info_list_itr.port))
+        self._prepare_certificates()
 
-			ca_list = self.root_ca_map[connectivity_info_list_itr.group_name]
-			suffix_itr = 1
-			for ca_list_itr in ca_list:
-				core_ca_file_path = os.path.join(self.ca_location,
-											connectivity_info_list_itr.group_name +'_root_ca'+ str(suffix_itr) +'.pem')
-				aws_iot_mqtt_shadow_client.configureCredentials(core_ca_file_path, private_key, certificate)
-				self._logger.info('Using CA at: {}'.format(core_ca_file_path))
+    def connect(self, private_key, certificate):
+        """Attempts to connect to one of the discovered greengrass core devices"""
 
-				try:
-					# Connect to AWS IoT
-					connection_established = aws_iot_mqtt_shadow_client.connect()
-					if connection_established:
-						break
-				except socket.error as err:
-					if err.errno != errno.ECONNREFUSED:
-						raise
+        connection_established = False
 
-				# If connection is not successful, attempt connection with the next root CA in the list
-				self._logger.info('Connect attempt failed with this CA!')
-				suffix_itr += 1
+        # Configure Credentials
+        self._client.configureCredentials(
+            self._core_certificate_path, private_key, certificate)
 
-			# If connection is successful, break and continue with the rest of the application
-			if connection_established:
-				self._logger.info('Connected to GGC {} in Group {}!!'.format(connectivity_info_list_itr.ggc_name,
-																		connectivity_info_list_itr.group_name))
-				break
-			# If connection is not successul, attempt connecting with the next endpoint and port in the list
-			self._logger.info('Connect attempt failed for GCC {} in Group {}'.format(connectivity_info_list_itr.ggc_name,
-																				connectivity_info_list_itr.group_name))
+        # Attempt connecting to any of the endpoint in the connectivity list
+        for connectivity_info in self._core_connectivity_info.connectivityInfoList:
+            logger.debug('Connecting to %s on Port %s with Certificate %s',
+                         connectivity_info.host, connectivity_info.port, self._core_certificate_path)
+            # Configure Endpoint
+            self._client.configureEndpoint(
+                connectivity_info.host, connectivity_info.port)
 
+            try:
+                # Connect to AWS IoT
+                connection_established = self._client.connect()
+                # If connection is successful break out of loop
+                if connection_established:
+                    break
+            except OSError as err:
+                if err.errno != errno.ECONNREFUSED:
+                    logger.error(err.errno)
+                    self._delete_certificates()
+                    sys.exit(err)
 
-		# If unable to connect to any of the endpoints, then exit
-		if not connection_established:
-			self._logger.error('Connection to any GGC could not be established!')
-			sys.exit()
+            # If connection is not successul, attempt connecting with the next endpoint and port in the list
+            logger.debug('Connection attempt failed for GCC %s in Group %s',
+                         self._core_connectivity_info.coreThingArn, self._core_connectivity_info.groupId)
 
+        if connection_established:
+            # Connection attempt was succesful
+            logger.info('Connected to GGC %s in Group %s!',
+                        self._core_connectivity_info.coreThingArn, self._core_connectivity_info.groupId)
 
-	def _store_certificates(self):
-		# Store all certificates using group names for the certificate names
-		for group_name, ca_list in self.root_ca_map.items():
-			suffix_itr = 1
-			for ca_list_itr in ca_list:
-				with open(os.path.join(self.ca_location, group_name +'_root_ca'+ str(suffix_itr) +'.pem'), 'w') as file:
-					file.write(ca_list_itr)
-				suffix_itr += 1
+        # If unable to connect to any of the endpoints, then exit
+        if not connection_established:
+            logger.error(
+                'Connection to any GGC could not be established!')
+            self._delete_certificates()
+            sys.exit()
+
+    def _prepare_certificates(self):
+        # Store all certificates using group names for the certificate names
+        for group_id, certificate in self._root_certificate_map:
+            with open(os.path.join(self._certificate_basepath, group_id + '_root.ca.pem'), 'w') as file:
+                file.write(certificate)
+
+    def _delete_certificates(self):
+        logger.info('Cleanup core certificate files')
+        for group_id, _ in self._root_certificate_map:
+            os.remove(os.path.join(self._certificate_basepath,
+                                   group_id + '_root.ca.pem'))
+
+    def disconnect(self):
+        """Cleans up written core certificate files"""
+
+        logger.info('Closing connection to GGC')
+        try:
+            self._client.disconnect()
+        except AWSIoTExceptions.disconnectError as err:
+            logger.warn(err.message)
+
+        logger.info('Closed connection')
+
+        self._delete_certificates()
