@@ -3,9 +3,9 @@
 import logging
 import os
 import socket
-import sys
 import errno
 
+from AWSIoTGG.Exceptions import establishConnectionFailedException
 from AWSIoTPythonSDK.exception import AWSIoTExceptions
 
 logger = logging.getLogger(__name__)
@@ -53,9 +53,6 @@ class GGConnectionManager:
                     break
             except OSError as err:
                 logger.error(err)
-                if err.errno != errno.ECONNREFUSED and err.errno != errno.EINVAL:
-                    self._delete_certificates()
-                    sys.exit(err)
 
             # If connection is not successul, attempt connecting with the next endpoint and port in the list
             logger.debug('Connection attempt failed for GCC %s in Group %s',
@@ -71,7 +68,7 @@ class GGConnectionManager:
             logger.error(
                 'Connection to any GGC could not be established!')
             self._delete_certificates()
-            sys.exit()
+            raise establishConnectionFailedException()
 
     def _prepare_certificates(self):
         # Store all certificates using group names for the certificate names
