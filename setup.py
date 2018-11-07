@@ -2,7 +2,7 @@ from setuptools import setup, find_packages
 
 setup(
     name="AWSIoTGG",
-    version="0.2",
+    version="0.3",
     packages=find_packages(),
     url="https://github.com/daviian/awsiotgg",
 

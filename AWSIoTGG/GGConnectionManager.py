@@ -52,8 +52,8 @@ class GGConnectionManager:
                 if connection_established:
                     break
             except OSError as err:
-                if err.errno != errno.ECONNREFUSED:
-                    logger.error(err.errno)
+                logger.error(err)
+                if err.errno != errno.ECONNREFUSED and err.errno != errno.EINVAL:
                     self._delete_certificates()
                     sys.exit(err)
 
