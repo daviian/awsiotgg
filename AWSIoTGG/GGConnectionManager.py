@@ -2,6 +2,7 @@
 
 import logging
 import os
+import pickle
 import socket
 import errno
 
@@ -16,8 +17,12 @@ class GGConnectionManager:
 
     def __init__(self, client, discovery_info):
         self._client = client
-        self._core_connectivity_info = discovery_info.getAllCores()[0]
-        self._root_certificate_map = discovery_info.getAllCas()
+
+        if discovery_info is None:
+            self._load_cached_discoveryinfo()
+        else:
+            self._core_connectivity_info = discovery_info.getAllCores()[0]
+            self._root_certificate_map = discovery_info.getAllCas()
 
         # Certificate Storage path
         self._certificate_basepath = os.path.realpath(os.path.join(
@@ -25,6 +30,10 @@ class GGConnectionManager:
 
         self._core_certificate_path = os.path.join(
             self._certificate_basepath, self._core_connectivity_info.groupId + '_root.ca.pem')
+
+        # Cache path
+        self._cache_basepath = os.path.realpath(os.path.join(
+            os.getcwd(), 'discovery-cache'))
 
         self._prepare_certificates()
 
@@ -58,17 +67,18 @@ class GGConnectionManager:
             logger.debug('Connection attempt failed for GCC %s in Group %s',
                          self._core_connectivity_info.coreThingArn, self._core_connectivity_info.groupId)
 
-        if connection_established:
-            # Connection attempt was succesful
-            logger.info('Connected to GGC %s in Group %s!',
-                        self._core_connectivity_info.coreThingArn, self._core_connectivity_info.groupId)
-
         # If unable to connect to any of the endpoints, then exit
         if not connection_established:
             logger.error(
                 'Connection to any GGC could not be established!')
             self._delete_certificates()
             raise establishConnectionFailedException()
+
+        # Connection attempt was succesful
+        logger.info('Connected to GGC %s in Group %s!',
+                    self._core_connectivity_info.coreThingArn, self._core_connectivity_info.groupId)
+
+        self._cache_discoveryinfo()
 
     def _prepare_certificates(self):
         # Store all certificates using group names for the certificate names
@@ -81,6 +91,21 @@ class GGConnectionManager:
         for group_id, _ in self._root_certificate_map:
             os.remove(os.path.join(self._certificate_basepath,
                                    group_id + '_root.ca.pem'))
+
+    def _cache_discoveryinfo(self):
+        with open(os.path.join(self._cache_basepath, 'connectivityinfo.pickle'), 'wb') as f:
+            pickle.dump(self._core_connectivity_info,
+                        f, pickle.HIGHEST_PROTOCOL)
+
+        with open(os.path.join(self._cache_basepath, 'certificate-map.pickle'), 'wb') as f:
+            pickle.dump(self._root_certificate_map, f, pickle.HIGHEST_PROTOCOL)
+
+    def _load_cached_discoveryinfo(self):
+        with open(os.path.join(self._cache_basepath, 'connectivityinfo.pickle'), 'wb') as f:
+            self._core_connectivity_info = pickle.load(f)
+
+        with open(os.path.join(self._cache_basepath, 'certificate-map.pickle'), 'wb') as f:
+            self._root_certificate_map = pickle.load(f)
 
     def disconnect(self):
         """Cleans up written core certificate files"""

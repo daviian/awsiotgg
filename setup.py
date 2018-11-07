@@ -6,7 +6,7 @@ setup(
     packages=find_packages(),
     url="https://github.com/daviian/awsiotgg",
 
-    install_requires=["AWSIoTPythonSDK>=1.3.1"],
+    install_requires=["AWSIoTPythonSDK>=1.4.0"],
 
     author="David Schneiderbauer",
     author_email="dschneiderbauer@gmail.com",
