@@ -1,32 +1,40 @@
 # awsiotgg
 
-Establishes AWS GreenGrass Connections
+Wrapper for AWS Greengrass to perform Core Discovery and Connection Establishment
+
+## Features
+
+* Core Discovery
+* Core Connection Establishment
+* Discovery Information Cache (enables connecting to Core even connection to Discovery Endpoint is lost)
+* Automatic Retry during Discovery and Connection Establishment
 
 ## Usage
 
 ```python
-# Init AWSIoTMQTTShadowClient
-self._shadow_client = AWSIoTMQTTShadowClient(self._config.THING_NAME)
 
-# AWSIoTShadowClient configuration
-...
+from AWSIoTGG import GGConnector
+
+# Init AWSIoTMQTTShadowClient
+self._shadow_client = AWSIoTPyMQTT.AWSIoTMQTTShadowClient(<THING_NAME>)
 
 # Init DiscoveryInfoProvider
-discovery_info_provider = DiscoveryInfoProvider()
+self._discovery_info_provider = DiscoveryInfoProvider()
+self._discovery_info_provider.configureEndpoint(<HOST>)
+self._discovery_info_provider.configureCredentials(<ROOT_CA_PATH>, <CERTIFICATE_PATH>, <PRIVATE_KEY_PATH>)
 
-# DiscoveryInfoProvider configuration
-...
+gg_connector = GGConnector(
+    self._shadow_client, self._discovery_info_provider)
 
-discovery_info = discovery_info_provider.discover(
-    self._config.THING_NAME)
+try:
+    core_info, group_ca_path = gg_connector.discover(<THING_NAME>)
 
-# Connect to GGC
-self._connection_manager = GGConnectionManager(
-    self._shadow_client, discovery_info)
-# Connect ShadowClient
-logger.info('Connecting MQTT Shadow Client')
-self._connection_manager.connect(
-    self._config.PRIVATE_KEY_PATH, self._config.CERTIFICATE_PATH)
+    gg_connector.connect(
+        core_info, group_ca_path, <CERTIFICATE_PATH>, <PRIVATE_KEY_PATH>)
+except BaseException as err:
+    logger.error(err)
+    sys.exit(1)
+
+# Here comes the actual device implementation
 
 ```
-
