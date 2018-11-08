@@ -50,7 +50,8 @@ class GGConnector:
 
                 logger.debug('Persist connectivity/identity information...')
                 # cleanup old certificates
-                shutil.rmtree(GROUP_CA_PATH)
+                if os.path.exists(GROUP_CA_PATH):
+                    shutil.rmtree(GROUP_CA_PATH)
 
                 # persist new certificate
                 group_ca_path = GROUP_CA_PATH + group_id + \
