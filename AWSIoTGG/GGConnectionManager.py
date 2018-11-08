@@ -101,10 +101,10 @@ class GGConnectionManager:
             pickle.dump(self._root_certificate_map, f, pickle.HIGHEST_PROTOCOL)
 
     def _load_cached_discoveryinfo(self):
-        with open(os.path.join(self._cache_basepath, 'connectivityinfo.pickle'), 'wb') as f:
+        with open(os.path.join(self._cache_basepath, 'connectivityinfo.pickle'), 'rb') as f:
             self._core_connectivity_info = pickle.load(f)
 
-        with open(os.path.join(self._cache_basepath, 'certificate-map.pickle'), 'wb') as f:
+        with open(os.path.join(self._cache_basepath, 'certificate-map.pickle'), 'rb') as f:
             self._root_certificate_map = pickle.load(f)
 
     def disconnect(self):
