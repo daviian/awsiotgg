@@ -1,1 +1,2 @@
 from AWSIoTGG.GGConnectionManager import GGConnectionManager
+from AWSIoTGG.Exceptions import establishConnectionFailedException
