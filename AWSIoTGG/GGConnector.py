@@ -77,7 +77,7 @@ class GGConnector:
 
         return core_info, group_ca_path
 
-    def connect(self, core_info, group_ca, private_key_path, certificate_path, retry_count=5):
+    def connect(self, core_info, group_ca, certificate_path, private_key_path, retry_count=5):
         """Attempts to connect to one of the discovered greengrass core devices"""
 
         self._client.configureCredentials(
