@@ -1,2 +1,2 @@
-from AWSIoTGG.GGConnectionManager import GGConnectionManager
-from AWSIoTGG.Exceptions import establishConnectionFailedException
+from AWSIoTGG.GGConnector import GGConnector
+from AWSIoTGG.Exceptions import DiscoverCoreFailedException, EstablishConnectionFailedException
