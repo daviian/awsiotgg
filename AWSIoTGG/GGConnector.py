@@ -125,7 +125,7 @@ class GGConnector:
 
         core_info, group_ca_path = self._get_connectivityinfo()
 
-        return core_info is not None and group_ca_path is not None
+        return core_info is None or group_ca_path is None
 
     def _store_connectivityinfo(self, core_info, group_ca_path):
         """Cache connectivity info"""
